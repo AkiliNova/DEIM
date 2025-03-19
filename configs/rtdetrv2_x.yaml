@@ -1,0 +1,79 @@
+model:
+  type: RTDETR
+  backbone:
+    type: HGNetv2
+    pretrained: false
+    depth_multiple: 1.33
+    width_multiple: 1.25
+  neck:
+    type: ChannelMapper
+    in_channels: [256, 512, 1024]
+    out_channels: 256
+    num_outs: 4
+  head:
+    type: RTDETRHead
+    num_classes: 80
+    num_queries: 900
+    num_feature_levels: 4
+    with_box_refine: true
+    two_stage: true
+    transformer:
+      type: RTDETRTransformer
+      encoder:
+        type: RTDETRTransformerEncoder
+        num_layers: 6
+        dim_feedforward: 2048
+        nhead: 8
+        dropout: 0.1
+        activation: relu
+        normalize_before: false
+      decoder:
+        type: RTDETRTransformerDecoder
+        num_layers: 6
+        dim_feedforward: 2048
+        nhead: 8
+        dropout: 0.1
+        activation: relu
+        normalize_before: false
+        return_intermediate: true
+      d_model: 256
+      nhead: 8
+      num_encoder_layers: 6
+      num_decoder_layers: 6
+      dim_feedforward: 2048
+      dropout: 0.1
+      activation: relu
+      normalize_before: false
+      return_intermediate_dec: true
+    loss_cls:
+      type: CrossEntropyLoss
+      use_sigmoid: false
+      loss_weight: 1.0
+      class_weight: 1.0
+    loss_bbox:
+      type: L1Loss
+      loss_weight: 5.0
+    loss_iou:
+      type: GIoULoss
+      loss_weight: 2.0
+    focal_alpha: 0.25
+    focal_gamma: 2.0
+    train_cfg:
+      assigner:
+        type: HungarianAssigner
+        cls_cost:
+          type: ClassificationCost
+          weight: 1.0
+        reg_cost:
+          type: BBoxL1Cost
+          weight: 5.0
+        iou_cost:
+          type: IoUCost
+          iou_mode: giou
+          weight: 2.0
+    test_cfg:
+      max_per_img: 100
+      score_threshold: 0.0
+      nms:
+        type: nms
+        iou_threshold: 0.7 
