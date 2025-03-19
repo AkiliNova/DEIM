@@ -35,8 +35,8 @@ COCO_CLASSES = [
 def load_model():
     global MODEL
     if MODEL is None:
-        config_path = os.path.join(os.path.dirname(__file__), '../configs/rtdetrv2_l.yaml')
-        checkpoint_path = os.path.join(os.path.dirname(__file__), '../pretrained/deim_rtdetrv2_l.pth')
+        config_path = os.path.join(os.path.dirname(__file__), '../configs/rtdetrv2_x.yaml')
+        checkpoint_path = os.path.join(os.path.dirname(__file__), '../pretrained/deim_rtdetrv2_x.pth')
         
         cfg = YAMLConfig(config_path, resume=checkpoint_path)
         if 'HGNetv2' in cfg.yaml_cfg:
