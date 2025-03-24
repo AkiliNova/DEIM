@@ -1,13 +1,56 @@
+__include__: [
+  './dataset/coco_detection.yml',
+  './runtime.yml',
+  './base/dataloader.yml',
+  './base/rt_optimizer.yml',
+  './base/rtdetrv2_r50vd.yml',
+]
+
+output_dir: ./outputs/deim_rtdetrv2_x
+
+PResNet:
+  depth: 101
+
+HybridEncoder:
+  hidden_dim: 384
+  dim_feedforward: 2048
+
+RTDETRTransformerv2:
+  feat_channels: [384, 384, 384]
+
+optimizer:
+  type: AdamW
+  params: 
+    - 
+      params: '^(?=.*backbone)(?!.*norm|bn).*$'
+      lr: 0.000001
+    - 
+      params: '^(?=.*(?:encoder|decoder))(?=.*(?:norm|bn)).*$'    # only encoder + decoder norm
+      weight_decay: 0.
+
+  lr: 0.0001
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
 model:
-  type: RTDETR
+  type: DEIMRTDETR
   backbone:
-    type: HGNetv2
-    pretrained: false
-    depth_multiple: 1.33
-    width_multiple: 1.25
+    type: ResNet
+    depth: 101
+    num_stages: 4
+    out_indices: (0, 1, 2, 3)
+    frozen_stages: -1
+    norm_cfg:
+      type: BN
+      requires_grad: True
+    norm_eval: False
+    style: pytorch
+    init_cfg:
+      type: Pretrained
+      checkpoint: torchvision://resnet101
   neck:
     type: ChannelMapper
-    in_channels: [256, 512, 1024]
+    in_channels: [256, 512, 1024, 2048]
     out_channels: 256
     num_outs: 4
   head:
@@ -18,14 +61,14 @@ model:
     with_box_refine: true
     two_stage: true
     transformer:
-      type: RTDETRTransformer
+      type: RTDETRTransformerv2
       encoder:
         type: RTDETRTransformerEncoder
         num_layers: 6
         dim_feedforward: 2048
         nhead: 8
         dropout: 0.1
-        activation: relu
+        activation: silu
         normalize_before: false
       decoder:
         type: RTDETRTransformerDecoder
@@ -33,7 +76,7 @@ model:
         dim_feedforward: 2048
         nhead: 8
         dropout: 0.1
-        activation: relu
+        activation: silu
         normalize_before: false
         return_intermediate: true
       d_model: 256
@@ -42,22 +85,14 @@ model:
       num_decoder_layers: 6
       dim_feedforward: 2048
       dropout: 0.1
-      activation: relu
+      activation: silu
       normalize_before: false
       return_intermediate_dec: true
-    loss_cls:
-      type: CrossEntropyLoss
-      use_sigmoid: false
-      loss_weight: 1.0
-      class_weight: 1.0
-    loss_bbox:
-      type: L1Loss
-      loss_weight: 5.0
-    loss_iou:
-      type: GIoULoss
-      loss_weight: 2.0
-    focal_alpha: 0.25
-    focal_gamma: 2.0
+    criterion:
+      type: DEIMCriterion
+      weight_dict: {loss_mal: 1, loss_bbox: 5, loss_giou: 2}
+      losses: ['mal', 'boxes']
+      gamma: 1.5
     train_cfg:
       assigner:
         type: HungarianAssigner
