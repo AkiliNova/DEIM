@@ -35,22 +35,35 @@ COCO_CLASSES = [
 def load_model():
     global MODEL
     if MODEL is None:
-        config_path = os.path.join(os.path.dirname(__file__), '../configs/rtdetrv2_x.yaml')
-        checkpoint_path = os.path.join(os.path.dirname(__file__), '../pretrained/deim_rtdetrv2_x.pth')
-        
-        cfg = YAMLConfig(config_path, resume=checkpoint_path)
-        if 'HGNetv2' in cfg.yaml_cfg:
-            cfg.yaml_cfg['HGNetv2']['pretrained'] = False
-        
-        checkpoint = torch.load(checkpoint_path, map_location='cpu')
-        if 'ema' in checkpoint:
-            state = checkpoint['ema']['module']
-        else:
-            state = checkpoint['model']
-        
-        cfg.model.load_state_dict(state)
-        MODEL = cfg.model.to(DEVICE)
-        MODEL.eval()
+        try:
+            print("Loading model configuration...")
+            config_path = os.path.join(os.path.dirname(__file__), '../configs/rtdetrv2_x.yaml')
+            checkpoint_path = os.path.join(os.path.dirname(__file__), '../pretrained/deim_rtdetrv2_x.pth')
+            
+            print(f"Config path: {config_path}")
+            print(f"Checkpoint path: {checkpoint_path}")
+            
+            cfg = YAMLConfig(config_path, resume=checkpoint_path)
+            print("Model configuration loaded successfully")
+            
+            print("Loading model checkpoint...")
+            checkpoint = torch.load(checkpoint_path, map_location='cpu')
+            if 'ema' in checkpoint:
+                state = checkpoint['ema']['module']
+            else:
+                state = checkpoint['model']
+            print("Model checkpoint loaded successfully")
+            
+            print("Loading state dict...")
+            cfg.model.load_state_dict(state)
+            print("State dict loaded successfully")
+            
+            MODEL = cfg.model.to(DEVICE)
+            MODEL.eval()
+            print(f"Model loaded and moved to {DEVICE}")
+        except Exception as e:
+            print(f"Error loading model: {str(e)}")
+            raise
 
 def download_video(url):
     """Download video from URL to temporary file"""
@@ -217,4 +230,4 @@ with gr.Blocks(title="DEIM Object Detection") as iface:
             )
 
 if __name__ == "__main__":
-    iface.launch(share=True, server_name="0.0.0.0", server_port=3000) 
+    iface.launch(share=True, server_name="0.0.0.0", server_port=3001) 
